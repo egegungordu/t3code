@@ -100,6 +100,24 @@ const config: ShowcaseConfig = {
         maximumUploadCount: 10,
       },
     },
+    // Fork-only (tr-mobile-screens): a standard-width iPhone, where long labels clip first.
+    {
+      id: "iphone-6.3",
+      platform: "ios",
+      simulator: "T3 Showcase iPhone 17",
+      simulatorDeviceType: "com.apple.CoreSimulator.SimDeviceType.iPhone-17",
+      appearance: "dark",
+      theme: DEFAULT_SHOWCASE_THEME,
+      scenes: ["thread", "terminal", "review", "threads", "environments", "agent-activity"],
+      storeAsset: {
+        store: "apple",
+        directory: "apple/iphone-6.3",
+        width: 1206,
+        height: 2622,
+        minimumUploadCount: 1,
+        maximumUploadCount: 10,
+      },
+    },
     {
       id: "iphone-6.5",
       platform: "ios",

@@ -1,0 +1,83 @@
+# Fork-only (egegungordu/t3code, branch tr-mobile-screens). Never part of a pull request.
+# Captures the mobile showcase on iOS simulators in English and Turkish so
+# Turkish labels can be checked for clipping against the English layout.
+name: TR mobile screens
+
+on:
+  push:
+    branches: [tr-mobile-screens]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tr-mobile-screens
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  ios:
+    name: iPhone 17 and 17 Pro Max, English and Turkish
+    runs-on: xcode-27
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@250f29ce396baf5e8f24498e17c0dfdebabc26eb # v1.15.0
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: |
+            args:
+              - --filter=@t3tools/mobile...
+              - --filter=@t3tools/scripts...
+              - --filter=t3...
+
+      - name: Expose pnpm
+        run: |
+          pnpm_version="$(node --print "require('./package.json').packageManager.split('@').pop()")"
+          vp_pnpm_bin="$HOME/.vite-plus/package_manager/pnpm/$pnpm_version/pnpm/bin"
+          echo "$vp_pnpm_bin" >> "$GITHUB_PATH"
+          "$vp_pnpm_bin/pnpm" --version
+
+      - name: Install AXe
+        run: |
+          brew tap cameroncooke/axe
+          if brew commands | grep -qx trust; then brew trust --formula cameroncooke/axe/axe; fi
+          brew install cameroncooke/axe/axe
+
+      - name: Install simulator controls
+        run: npm install --global agent-device@0.21.41
+
+      - name: Capture English
+        env:
+          T3_SHOWCASE_LANGUAGE: en
+        run: |
+          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark
+          mkdir -p tr-screens/en && cp -R artifacts/app-store/screenshots/apple/. tr-screens/en/
+
+      - name: Capture Turkish
+        env:
+          T3_SHOWCASE_LANGUAGE: tr
+        run: |
+          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --skip-build
+          mkdir -p tr-screens/tr && cp -R artifacts/app-store/screenshots/apple/. tr-screens/tr/
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tr-mobile-screens-ios
+          path: tr-screens/
+          if-no-files-found: warn
+          retention-days: 14

@@ -1177,6 +1177,15 @@ async function captureIos(
       ...(terminateRunningProcess ? ["--terminate-running-process"] : []),
       simulator.udid,
       ANDROID_PACKAGE,
+      // Fork-only (tr-mobile-screens): run the app in another system language.
+      ...(process.env.T3_SHOWCASE_LANGUAGE
+        ? [
+            "-AppleLanguages",
+            `(${process.env.T3_SHOWCASE_LANGUAGE})`,
+            "-AppleLocale",
+            process.env.T3_SHOWCASE_LANGUAGE === "tr" ? "tr_TR" : "en_US",
+          ]
+        : []),
       "--initialUrl",
       metroUrl,
       "--showcasePairingUrl",
