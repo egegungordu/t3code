@@ -719,7 +719,8 @@ export function parsePairingCredentialOutput(output: string): string {
 export async function issuePairingCredential(baseDir: string): Promise<string> {
   const output = await commandOutput(
     "node",
-    ["apps/server/src/bin.ts", "auth", "pairing", "create", "--base-dir", baseDir, "--json"],
+    // Fork-only (tr-mobile-screens): the default 5 min TTL expires before the slower runner's app pairs.
+    ["apps/server/src/bin.ts", "auth", "pairing", "create", "--base-dir", baseDir, "--json", "--ttl", "2h"],
     { env: { ...NodeProcess.env, NO_COLOR: "1" } },
   );
   return parsePairingCredentialOutput(output);
