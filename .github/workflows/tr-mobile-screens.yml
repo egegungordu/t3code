@@ -71,15 +71,22 @@ jobs:
         env:
           T3_SHOWCASE_LANGUAGE: en
         run: |
-          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark
-          mkdir -p tr-screens/en && cp -R artifacts/app-store/screenshots/apple/. tr-screens/en/
+          status=0
+          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark || status=$?
+          # Keep whatever was captured even when a later scene fails.
+          mkdir -p tr-screens/en && cp -R artifacts/app-store/screenshots/apple/. tr-screens/en/ || true
+          exit $status
 
       - name: Capture Turkish
+        if: ${{ !cancelled() }}
         env:
           T3_SHOWCASE_LANGUAGE: tr
         run: |
-          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --skip-build
-          mkdir -p tr-screens/tr && cp -R artifacts/app-store/screenshots/apple/. tr-screens/tr/
+          status=0
+          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --skip-build || status=$?
+          # Keep whatever was captured even when a later scene fails.
+          mkdir -p tr-screens/tr && cp -R artifacts/app-store/screenshots/apple/. tr-screens/tr/ || true
+          exit $status
 
       - name: Screenshot simulators on failure
         if: failure()

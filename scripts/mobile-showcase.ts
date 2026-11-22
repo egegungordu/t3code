@@ -2,6 +2,7 @@
 // @effect-diagnostics nodeBuiltinImport:off globalTimers:off globalDate:off - Host-side simulator and emulator automation uses Node subprocess and timing APIs directly.
 
 import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
@@ -1177,7 +1178,8 @@ async function captureIos(
   {
     const logDir = NodePath.join(REPO_ROOT, "tr-screens", "logs");
     await NodeFSP.mkdir(logDir, { recursive: true });
-    const logFile = await NodeFSP.open(NodePath.join(logDir, `${simulator.udid}.log`), "a");
+    // A plain fd (not a FileHandle): Node 26 throws when a FileHandle is garbage-collected while open.
+    const logFd = NodeFS.openSync(NodePath.join(logDir, `${simulator.udid}.log`), "a");
     const stream = NodeChildProcess.spawn(
       "xcrun",
       [
@@ -1193,7 +1195,7 @@ async function captureIos(
         "--predicate",
         'process == "T3Code" AND (subsystem == "com.facebook.react.log" OR eventMessage CONTAINS[c] "showcase" OR eventMessage CONTAINS[c] "pair" OR messageType == error)',
       ],
-      { stdio: ["ignore", logFile.fd, logFile.fd], detached: true },
+      { stdio: ["ignore", logFd, logFd], detached: true },
     );
     stream.unref();
   }
