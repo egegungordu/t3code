@@ -4,7 +4,8 @@ export interface ShowcaseRetryOptions {
   readonly retryDelayMs?: number;
 }
 
-const DEFAULT_ATTEMPT_TIMEOUT_MS = 10_000;
+// Fork-only (tr-mobile-screens): the GitHub-hosted runner runs the dev bundle much slower.
+const DEFAULT_ATTEMPT_TIMEOUT_MS = 60_000;
 const DEFAULT_RETRY_DELAY_MS = 500;
 
 function delay(ms: number): Promise<void> {

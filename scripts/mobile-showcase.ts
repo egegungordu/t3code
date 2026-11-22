@@ -1172,6 +1172,30 @@ async function captureIos(
     }
   }
   await normalizeIosSimulator(capture.appearance, simulator.udid);
+  // Fork-only (tr-mobile-screens): keep the app's logs (React Native console included) for diagnosis.
+  {
+    const logDir = NodePath.join(REPO_ROOT, "tr-screens", "logs");
+    await NodeFSP.mkdir(logDir, { recursive: true });
+    const logFile = await NodeFSP.open(NodePath.join(logDir, `${simulator.udid}.log`), "a");
+    const stream = NodeChildProcess.spawn(
+      "xcrun",
+      [
+        "simctl",
+        "spawn",
+        simulator.udid,
+        "log",
+        "stream",
+        "--style",
+        "compact",
+        "--level",
+        "debug",
+        "--predicate",
+        'process == "T3Code" AND (subsystem == "com.facebook.react.log" OR eventMessage CONTAINS[c] "showcase" OR eventMessage CONTAINS[c] "pair" OR messageType == error)',
+      ],
+      { stdio: ["ignore", logFile.fd, logFile.fd], detached: true },
+    );
+    stream.unref();
+  }
   if (appPath) {
     await runCommand("xcrun", ["simctl", "uninstall", simulator.udid, ANDROID_PACKAGE]).catch(
       () => undefined,
