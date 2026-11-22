@@ -120,6 +120,8 @@ function showcaseNavigationAction(
 export function installShowcaseCapture(
   pathnameFromState: (state: NavigationState) => string,
 ): () => void {
+  // Fork-only (tr-mobile-screens): diagnostics for the GitHub-hosted runner.
+  console.warn(`[showcase-debug] enabled=${SHOWCASE_ENABLED} urls=${getNativeShowcasePairingUrls().length}`);
   if (!SHOWCASE_ENABLED) return () => {};
 
   let disposed = false;
@@ -158,16 +160,29 @@ export function installShowcaseCapture(
 
   const pair = (pairingUrls: ReadonlyArray<string>) => {
     for (const pairingUrl of pairingUrls) {
+      let attempt = 0;
       void retryShowcaseOperation(
-        async () =>
-          AsyncResult.isSuccess(
-            await runAtomCommand(
-              appAtomRegistry,
-              connectPairingUrl,
-              { pairingUrl },
-              { reportFailure: false },
-            ),
-          ),
+        async () => {
+          attempt += 1;
+          const started = Date.now();
+          const result = await runAtomCommand(
+            appAtomRegistry,
+            connectPairingUrl,
+            { pairingUrl },
+            { reportFailure: false },
+          );
+          const ok = AsyncResult.isSuccess(result);
+          if (attempt <= 5 || ok) {
+            let detail = "";
+            try {
+              detail = JSON.stringify(result, (_k, v) => (v instanceof Error ? `${v.name}: ${v.message}` : v)).slice(0, 600);
+            } catch {
+              detail = String(result);
+            }
+            console.warn(`[showcase-debug] pair attempt ${attempt} ${pairingUrl.replace(/token=.*/, "token=…")} ok=${ok} ${Date.now() - started}ms ${detail}`);
+          }
+          return ok;
+        },
         { isCancelled: isCancelled() },
       );
     }
