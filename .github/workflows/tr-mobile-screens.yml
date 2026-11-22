@@ -72,7 +72,7 @@ jobs:
           T3_SHOWCASE_LANGUAGE: en
         run: |
           status=0
-          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark || status=$?
+          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --scene threads --scene thread --scene terminal --scene review --scene environments || status=$?
           # Keep whatever was captured even when a later scene fails.
           mkdir -p tr-screens/en && cp -R artifacts/app-store/screenshots/apple/. tr-screens/en/ || true
           exit $status
@@ -83,7 +83,7 @@ jobs:
           T3_SHOWCASE_LANGUAGE: tr
         run: |
           status=0
-          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --skip-build || status=$?
+          pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --scene threads --scene thread --scene terminal --scene review --scene environments --skip-build || status=$?
           # Keep whatever was captured even when a later scene fails.
           mkdir -p tr-screens/tr && cp -R artifacts/app-store/screenshots/apple/. tr-screens/tr/ || true
           exit $status

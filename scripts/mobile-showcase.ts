@@ -740,12 +740,24 @@ export function encodeAndroidPairingUrls(pairingUrls: ReadonlyArray<string>): st
 function startMetro(config: ShowcaseConfig): NodeChildProcess.ChildProcess {
   return spawnProcess(
     "pnpm",
-    ["exec", "expo", "start", "--dev-client", "--port", String(config.metroPort)],
+    [
+      "exec",
+      "expo",
+      "start",
+      "--dev-client",
+      "--port",
+      String(config.metroPort),
+      // Fork-only: the inlined showcase language is part of the bundle, so never reuse a cached one.
+      ...(NodeProcess.env.T3_SHOWCASE_LANGUAGE ? ["--clear"] : []),
+    ],
     {
       cwd: MOBILE_ROOT,
       env: {
         ...MOBILE_BUILD_ENV,
         EXPO_PUBLIC_SHOWCASE: "1",
+        ...(NodeProcess.env.T3_SHOWCASE_LANGUAGE
+          ? { EXPO_PUBLIC_SHOWCASE_LANGUAGE: NodeProcess.env.T3_SHOWCASE_LANGUAGE }
+          : {}),
       },
     },
   );

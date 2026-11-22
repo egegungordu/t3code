@@ -55,8 +55,12 @@ function readSystemLocales(): ReadonlyArray<string> {
   }
 }
 
+// Fork-only (tr-mobile-screens): showcase captures pin the app language at bundle time.
+const SHOWCASE_LANGUAGE = process.env.EXPO_PUBLIC_SHOWCASE_LANGUAGE;
+
 export function useLanguagePreference(): string {
   const preferences = useAtomValue(mobilePreferencesAtom);
+  if (SHOWCASE_LANGUAGE) return SHOWCASE_LANGUAGE;
   return AsyncResult.isSuccess(preferences)
     ? (preferences.value.language ?? DEFAULT_LOCALE)
     : DEFAULT_LOCALE;
