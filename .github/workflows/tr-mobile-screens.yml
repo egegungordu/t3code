@@ -73,6 +73,14 @@ jobs:
           pnpm screenshots:mobile --platform ios --device iphone-6.3 --device iphone-6.9 --appearance dark --skip-build
           mkdir -p tr-screens/tr && cp -R artifacts/app-store/screenshots/apple/. tr-screens/tr/
 
+      - name: Screenshot simulators on failure
+        if: failure()
+        run: |
+          mkdir -p tr-screens/failure
+          for udid in $(xcrun simctl list devices booted -j | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8")).devices;for(const k in d)for(const x of d[k])console.log(x.udid)'); do
+            xcrun simctl io "$udid" screenshot "tr-screens/failure/$udid.png" || true
+          done
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

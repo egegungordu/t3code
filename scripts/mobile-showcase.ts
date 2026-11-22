@@ -984,7 +984,7 @@ async function iosAppContainer(udid: string): Promise<string> {
 async function waitForIosShowcaseScene(
   udid: string,
   scene: ShowcaseScene,
-  timeoutMs = 90_000,
+  timeoutMs = 180_000,
 ): Promise<void> {
   const readyPath = NodePath.join(
     await iosAppContainer(udid),
@@ -1177,15 +1177,6 @@ async function captureIos(
       ...(terminateRunningProcess ? ["--terminate-running-process"] : []),
       simulator.udid,
       ANDROID_PACKAGE,
-      // Fork-only (tr-mobile-screens): run the app in another system language.
-      ...(process.env.T3_SHOWCASE_LANGUAGE
-        ? [
-            "-AppleLanguages",
-            `(${process.env.T3_SHOWCASE_LANGUAGE})`,
-            "-AppleLocale",
-            process.env.T3_SHOWCASE_LANGUAGE === "tr" ? "tr_TR" : "en_US",
-          ]
-        : []),
       "--initialUrl",
       metroUrl,
       "--showcasePairingUrl",
@@ -1197,6 +1188,15 @@ async function captureIos(
       // Simulator rotation UI scripting needs Accessibility permission unavailable on CI.
       "--showcaseOrientation",
       capture.device.orientation ?? "portrait",
+      // Fork-only (tr-mobile-screens): run the app in another system language.
+      ...(process.env.T3_SHOWCASE_LANGUAGE
+        ? [
+            "-AppleLanguages",
+            `(${process.env.T3_SHOWCASE_LANGUAGE})`,
+            "-AppleLocale",
+            process.env.T3_SHOWCASE_LANGUAGE === "tr" ? "tr_TR" : "en_US",
+          ]
+        : []),
     ]);
   };
   await NodeFSP.rm(readyPath, { force: true });
@@ -1216,7 +1216,7 @@ async function captureIos(
         const isLastAttempt = attempt === 1;
         try {
           // A fresh Expo build can spend over 30 s applying a bundled update; killing it returns to the launcher.
-          await waitForScene(120_000);
+          await waitForScene(600_000); // Fork-only: slower GitHub-hosted runner.
           break;
         } catch (error) {
           if (isLastAttempt) throw error;
