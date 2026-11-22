@@ -997,6 +997,16 @@ async function waitForIosShowcaseScene(
     if (readyScene.trim() === scene) return;
     await delay(500);
   }
+  // Fork-only (tr-mobile-screens): keep what the simulator showed when the scene never rendered.
+  const failureDir = NodePath.join(REPO_ROOT, "tr-screens", "failure");
+  await NodeFSP.mkdir(failureDir, { recursive: true });
+  await runCommand("xcrun", [
+    "simctl",
+    "io",
+    udid,
+    "screenshot",
+    NodePath.join(failureDir, `${udid}-${scene}-${Date.now()}.png`),
+  ]).catch(() => undefined);
   throw new Error(`iOS showcase scene '${scene}' did not render within ${timeoutMs}ms.`);
 }
 
@@ -1188,17 +1198,34 @@ async function captureIos(
       // Simulator rotation UI scripting needs Accessibility permission unavailable on CI.
       "--showcaseOrientation",
       capture.device.orientation ?? "portrait",
-      // Fork-only (tr-mobile-screens): run the app in another system language.
-      ...(process.env.T3_SHOWCASE_LANGUAGE
-        ? [
-            "-AppleLanguages",
-            `(${process.env.T3_SHOWCASE_LANGUAGE})`,
-            "-AppleLocale",
-            process.env.T3_SHOWCASE_LANGUAGE === "tr" ? "tr_TR" : "en_US",
-          ]
-        : []),
     ]);
   };
+  // Fork-only (tr-mobile-screens): set the simulator's system language before launch.
+  const showcaseLanguage = process.env.T3_SHOWCASE_LANGUAGE;
+  if (showcaseLanguage) {
+    const locale = showcaseLanguage === "tr" ? "tr_TR" : "en_US";
+    await runCommand("xcrun", [
+      "simctl",
+      "spawn",
+      simulator.udid,
+      "defaults",
+      "write",
+      "-g",
+      "AppleLanguages",
+      "-array",
+      showcaseLanguage,
+    ]);
+    await runCommand("xcrun", [
+      "simctl",
+      "spawn",
+      simulator.udid,
+      "defaults",
+      "write",
+      "-g",
+      "AppleLocale",
+      locale,
+    ]);
+  }
   await NodeFSP.rm(readyPath, { force: true });
   await NodeFSP.writeFile(scenePath, firstScene);
   await launchShowcaseApp(false);
@@ -1216,7 +1243,7 @@ async function captureIos(
         const isLastAttempt = attempt === 1;
         try {
           // A fresh Expo build can spend over 30 s applying a bundled update; killing it returns to the launcher.
-          await waitForScene(600_000); // Fork-only: slower GitHub-hosted runner.
+          await waitForScene(300_000); // Fork-only: slower GitHub-hosted runner.
           break;
         } catch (error) {
           if (isLastAttempt) throw error;
