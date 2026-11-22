@@ -50,6 +50,14 @@ jobs:
           echo "$vp_pnpm_bin" >> "$GITHUB_PATH"
           "$vp_pnpm_bin/pnpm" --version
 
+      - name: Raise the dev launcher manifest timeout
+        # expo-dev-launcher gives up on the Metro manifest after 10 s and shows its launcher; this runner needs longer.
+        run: |
+          for f in node_modules/.pnpm/expo-dev-launcher@*/node_modules/expo-dev-launcher/ios/EXDevLauncherController.m; do
+            sed -i '' 's/EXDevLauncherDefaultRequestTimeout = 10.0;/EXDevLauncherDefaultRequestTimeout = 180.0;/' "$f"
+            grep -n "EXDevLauncherDefaultRequestTimeout = " "$f"
+          done
+
       - name: Install AXe
         run: |
           brew tap cameroncooke/axe

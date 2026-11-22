@@ -756,6 +756,16 @@ async function warmMetroBundle(
 ): Promise<void> {
   const url = `http://${host}:${config.metroPort}/apps/mobile/index.bundle?platform=${platform}&dev=true&minify=false`;
   await runCommand("curl", ["--fail", "--silent", "--show-error", "--output", "/dev/null", url]);
+  // Fork-only (tr-mobile-screens): also warm the exact Hermes bundle the dev client loads from the manifest,
+  // so the slower GitHub-hosted runner does not build it while the app waits.
+  if (platform !== "ios") return;
+  const manifest = await fetch(`http://${host}:${config.metroPort}/`, {
+    headers: { "expo-platform": "ios", accept: "application/expo+json,application/json" },
+  }).then((response) => response.json() as Promise<{ launchAsset?: { url?: string } }>);
+  const bundleUrl = manifest.launchAsset?.url;
+  if (!bundleUrl) throw new Error("The iOS manifest has no launchAsset URL.");
+  console.log(`Warming ${bundleUrl}`);
+  await runCommand("curl", ["--fail", "--silent", "--show-error", "--output", "/dev/null", bundleUrl]);
 }
 
 async function buildIos(): Promise<string> {
